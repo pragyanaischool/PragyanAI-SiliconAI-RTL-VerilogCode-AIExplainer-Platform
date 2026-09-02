@@ -1,0 +1,7 @@
+__pycache__/
+.env
+venv/
+.streamlit/secrets.toml
+sim_out
+design.v
+test_bench.v
