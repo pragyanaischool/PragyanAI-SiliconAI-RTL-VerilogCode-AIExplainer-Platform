@@ -8,7 +8,10 @@ st.set_page_config(
     page_icon="📖",
     layout="wide"
 )
-
+try:
+    st.image("PragyanAI_Transperent.png", width=300)
+except Exception:
+    pass
 st.title("PragyanAI - Deep-Dive Code Explainer & Test Coverage Analyzer")
 st.markdown(
     "Analyze your active Verilog design and testbench. Choose your target audience level, "
