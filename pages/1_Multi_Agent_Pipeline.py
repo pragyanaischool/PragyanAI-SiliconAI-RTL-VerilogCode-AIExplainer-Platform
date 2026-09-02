@@ -7,7 +7,7 @@ st.set_page_config(
     page_icon="🤖",
     layout="wide"
 )
-
+st.image("")
 st.title("PragyanAI - Multi-Agent RTL Generation & Verification Pipeline")
 st.markdown(
     "This pipeline coordinates specialized AI agents: the **Generator Agent** drafts synthesizable Verilog code, "
@@ -75,6 +75,7 @@ if run_pipeline:
         "status": "PENDING"
     }
 
+    first_version_captured = False
     progress_container = st.container()
 
     with progress_container:
@@ -90,6 +91,11 @@ if run_pipeline:
                     
                     if node_update:
                         current_state.update(node_update)
+                    
+                    # Capture the very first generated RTL draft before any correction loops
+                    if not first_version_captured and current_state.get("rtl_code"):
+                        st.session_state["rtl_v1"] = current_state["rtl_code"]
+                        first_version_captured = True
                         
                     st.write(f"-> Executed Agent Node: **{node_name.upper()}** (Attempt: {current_state['iteration']})")
                     
@@ -106,37 +112,35 @@ if run_pipeline:
                 st.error(f"Error details: {graph_err}")
                 st.stop()
 
-    # Save artifacts into global session state for downstream pages (Version Comparison, Editor, Explainer & RAG Bot)
-    st.session_state["rtl_v1"] = current_state.get("rtl_code", "")
+    # Save artifacts into global session state for downstream pages
+    if "rtl_v1" not in st.session_state or not st.session_state["rtl_v1"]:
+        st.session_state["rtl_v1"] = current_state.get("rtl_code", "")
     st.session_state["rtl_critic_notes"] = current_state.get("critic_review", "")
     st.session_state["rtl_final"] = current_state.get("rtl_code", "")
     st.session_state["testbench_code"] = current_state.get("test_code", "")
     st.session_state["simulation_log"] = current_state.get("run_output", "")
 
     # -----------------------------------------------------------------------------
-    # Results Display Tabs
+    # Enhanced Results Display (Expanded Views: v1, Test Cases, Final Fixed Code, Logs)
     # -----------------------------------------------------------------------------
     st.markdown("---")
-    st.subheader("📊 Pipeline Execution Results")
-    
-    tab_rtl, tab_critic, tab_tb, tab_log = st.tabs([
-        "1. Generated RTL Code", 
-        "2. Critic Audit Feedback", 
-        "3. Testbench Code", 
-        "4. Simulation Log"
-    ])
+    st.subheader("📊 Pipeline Execution Results & Expanded Version Breakdown")
 
-    with tab_rtl:
-        st.code(current_state.get("rtl_code", "// No code generated."), language="verilog")
+    with st.expander("📝 1. First Version Code (Initial Generator Draft - v1)", expanded=True):
+        st.code(st.session_state.get("rtl_v1", "// No initial draft available."), language="verilog")
 
-    with tab_critic:
-        st.markdown(current_state.get("critic_review", "*No critic feedback recorded.*"))
+    with st.expander("🧪 2. Test Case / Testbench Code Tested", expanded=True):
+        st.code(st.session_state.get("testbench_code", "// No testbench generated."), language="verilog")
 
-    with tab_tb:
-        st.code(current_state.get("test_code", "// No testbench generated."), language="verilog")
+    with st.expander("✅ 3. Final Fixed & Verified Version Code (Working Version)", expanded=True):
+        st.code(st.session_state.get("rtl_final", "// No final code available."), language="verilog")
 
-    with tab_log:
-        st.text(current_state.get("run_output", "No execution log available."))
+    with st.expander("📈 4. Simulation Execution Log & Critic Notes", expanded=True):
+        st.markdown("**Critic Audit Feedback:**")
+        st.markdown(st.session_state.get("rtl_critic_notes", "*No critic feedback recorded.*"))
+        st.markdown("---")
+        st.markdown("**Simulation Terminal Output / Test Result Log:**")
+        st.text(st.session_state.get("simulation_log", "No execution log available."))
 
     # Final Status Callout
     if current_state["status"] == "PASSED":
