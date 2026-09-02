@@ -48,7 +48,7 @@ if not api_key:
 # Initialize LLM with the specified model
 llm = ChatGroq(model="openai/gpt-oss-120b", temperature=0.2, api_key=api_key)
 
-# Helper function to parse LLM response into RTL code, Testbench, and Explanation blocks
+# Helper function to parse LLM response into code blocks and explanation
 def parse_agent_response(content: str) -> tuple:
     code_blocks = re.findall(r"```verilog\s*(.*?)\s*```", content, re.DOTALL)
     code = code_blocks[0].strip() if len(code_blocks) > 0 else "// No RTL code block found."
@@ -123,7 +123,7 @@ if spawn_variants:
             ])
             robust_rtl, robust_tb, robust_exp = parse_agent_response(robust_res.content)
 
-            # Store variants and testbenches in session state
+            # Store variants and testbenches safely in session state
             st.session_state["variant_perf"] = perf_rtl
             st.session_state["variant_perf_tb"] = perf_tb
             st.session_state["exp_perf"] = perf_exp
@@ -143,9 +143,9 @@ if spawn_variants:
             st.stop()
 
 # -----------------------------------------------------------------------------
-# Render Variants, Testbenches & Explanations if Available in Session State
+# Render Variants & Explanations if Available in Session State
 # -----------------------------------------------------------------------------
-if "variant_perf" in st.session_state:
+if st.session_state.get("variant_perf"):
     st.markdown("---")
     st.subheader("🔍 Comparative Architectural Variants & Specialized Testbenches")
     
@@ -160,17 +160,17 @@ if "variant_perf" in st.session_state:
         col_p1, col_p2 = st.columns(2)
         with col_p1:
             st.markdown("**RTL Design (`design.v`)**")
-            st.code(st.session_state["variant_perf"], language="verilog")
+            st.code(st.session_state.get("variant_perf", ""), language="verilog")
         with col_p2:
             st.markdown("**Specialized Testbench (`test_bench.v`)**")
-            st.code(st.session_state["variant_perf_tb"], language="verilog")
+            st.code(st.session_state.get("variant_perf_tb", "// No testbench generated yet."), language="verilog")
             
         st.markdown("#### Architectural Trade-off Analysis & Explanation")
-        st.markdown(st.session_state["exp_perf"])
+        st.markdown(st.session_state.get("exp_perf", ""))
         
         if st.button("📌 Select Performance RTL & Testbench for Studio", key="btn_perf"):
-            st.session_state["rtl_final"] = st.session_state["variant_perf"]
-            st.session_state["testbench_code"] = st.session_state["variant_perf_tb"]
+            st.session_state["rtl_final"] = st.session_state.get("variant_perf", "")
+            st.session_state["testbench_code"] = st.session_state.get("variant_perf_tb", "")
             st.success("✅ Locked Performance design and testbench into active session state! Head over to the **Interactive Editor** or **Advanced Testbench Evaluator**.")
 
     with tab_a:
@@ -178,17 +178,17 @@ if "variant_perf" in st.session_state:
         col_a1, col_a2 = st.columns(2)
         with col_a1:
             st.markdown("**RTL Design (`design.v`)**")
-            st.code(st.session_state["variant_area"], language="verilog")
+            st.code(st.session_state.get("variant_area", ""), language="verilog")
         with col_a2:
             st.markdown("**Specialized Testbench (`test_bench.v`)**")
-            st.code(st.session_state["variant_area_tb"], language="verilog")
+            st.code(st.session_state.get("variant_area_tb", "// No testbench generated yet."), language="verilog")
             
         st.markdown("#### Architectural Trade-off Analysis & Explanation")
-        st.markdown(st.session_state["exp_area"])
+        st.markdown(st.session_state.get("exp_area", ""))
         
         if st.button("📌 Select Area RTL & Testbench for Studio", key="btn_area"):
-            st.session_state["rtl_final"] = st.session_state["variant_area"]
-            st.session_state["testbench_code"] = st.session_state["variant_area_tb"]
+            st.session_state["rtl_final"] = st.session_state.get("variant_area", "")
+            st.session_state["testbench_code"] = st.session_state.get("variant_area_tb", "")
             st.success("✅ Locked Area design and testbench into active session state! Head over to the **Interactive Editor** or **Advanced Testbench Evaluator**.")
 
     with tab_r:
@@ -196,15 +196,15 @@ if "variant_perf" in st.session_state:
         col_r1, col_r2 = st.columns(2)
         with col_r1:
             st.markdown("**RTL Design (`design.v`)**")
-            st.code(st.session_state["variant_robust"], language="verilog")
+            st.code(st.session_state.get("variant_robust", ""), language="verilog")
         with col_r2:
             st.markdown("**Specialized Testbench (`test_bench.v`)**")
-            st.code(st.session_state["variant_robust_tb"], language="verilog")
+            st.code(st.session_state.get("variant_robust_tb", "// No testbench generated yet."), language="verilog")
             
         st.markdown("#### Architectural Trade-off Analysis & Explanation")
-        st.markdown(st.session_state["exp_robust"])
+        st.markdown(st.session_state.get("exp_robust", ""))
         
         if st.button("📌 Select Robust RTL & Testbench for Studio", key="btn_robust"):
-            st.session_state["rtl_final"] = st.session_state["variant_robust"]
-            st.session_state["testbench_code"] = st.session_state["variant_robust_tb"]
+            st.session_state["rtl_final"] = st.session_state.get("variant_robust", "")
+            st.session_state["testbench_code"] = st.session_state.get("variant_robust_tb", "")
             st.success("✅ Locked Robust design and testbench into active session state! Head over to the **Interactive Editor** or **Advanced Testbench Evaluator**.")
