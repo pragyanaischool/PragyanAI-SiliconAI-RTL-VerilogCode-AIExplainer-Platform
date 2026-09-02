@@ -12,7 +12,8 @@ st.set_page_config(
 # -----------------------------------------------------------------------------
 # Landing Page Header & Overview
 # -----------------------------------------------------------------------------
-st.title("⚡ Multi-Agent RTL Design, Verification & RAG Intelligence Studio")
+st.image("PragyanAI_Transperent.png")
+st.title(" PragyanAI - Multi-Agent RTL Design, Verification & RAG Intelligence Studio")
 st.markdown(
     "Welcome to the enterprise-grade hardware engineering and automated verification platform. "
     "This application coordinates specialized AI agents via **LangGraph**, high-performance LLMs (**Groq `openai/gpt-oss-120b`**), "
