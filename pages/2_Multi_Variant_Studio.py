@@ -5,12 +5,12 @@ from langchain_core.messages import SystemMessage, HumanMessage
 
 # Page Configuration
 st.set_page_config(
-    page_title="Multi-Agent Variant Studio",
+    page_title="PragyanAI - Multi-Agent Variant Studio",
     page_icon="⚡",
     layout="wide"
 )
 
-st.title("⚡ Multi-Agent Variant Generation & Explanation Studio")
+st.title("PragyanAI - Multi-Agent Variant Generation & Explanation Studio")
 st.markdown(
     "Instead of a single linear pipeline, this module dispatches **three specialized design agents** in parallel: "
     "a *Performance Architect*, an *Area Optimizer*, and a *Robustness Engineer*. "
