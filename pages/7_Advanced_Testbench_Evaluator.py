@@ -197,11 +197,13 @@ if st.session_state["batch_evaluation_results"]:
                 st.markdown("### 🤖 Iterative AI Repair & Re-run Agent")
                 st.markdown("If simulation failed, click below to have the AI analyze the error, **modify the code**, explain the fix, and automatically re-run the simulation test suite.")
                 
-                repair_btn_key = f"fix_btn_{ver_name.replace(' ', '_')}"
-                if st.button(f"🛠️ Modify Code & Re-run [{ver_name}] (Attempt {data['get', 'fix_attempts', 0] + 1})", key=repair_btn_key):
+                current_attempts = data.get("fix_attempts", 0)
+                repair_btn_key = f"fix_btn_{ver_name.replace(' ', '_')}_{current_attempts}"
+                
+                if st.button(f"🛠️ Modify Code & Re-run [{ver_name}] (Attempt {current_attempts + 1})", key=repair_btn_key):
                     with st.spinner(f"AI Agent rewriting code, running compilation, and testing [{ver_name}]..."):
                         time.sleep(3)
-                        attempts = data.get("fix_attempts", 0) + 1
+                        attempts = current_attempts + 1
                         
                         repair_prompt = (
                             f"You are an expert Verilog Debugging and Synthesis Agent. "
@@ -334,5 +336,4 @@ if st.session_state["batch_evaluation_results"]:
                 file_name="PragyanAI_Batch_Verification_Report.pdf",
                 mime="application/pdf"
             )
-            
             
