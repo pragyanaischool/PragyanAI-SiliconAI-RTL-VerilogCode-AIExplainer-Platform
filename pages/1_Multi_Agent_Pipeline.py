@@ -7,7 +7,7 @@ st.set_page_config(
     page_icon="🤖",
     layout="wide"
 )
-st.image("")
+st.image("PragyanAI_Transperent.png")
 st.title("PragyanAI - Multi-Agent RTL Generation & Verification Pipeline")
 st.markdown(
     "This pipeline coordinates specialized AI agents: the **Generator Agent** drafts synthesizable Verilog code, "
