@@ -12,16 +12,16 @@ from reportlab.lib import colors
 
 # Page Configuration
 st.set_page_config(
-    page_title="PragyanAI - Advanced Testbench Evaluator & AI Repair Studio",
+    page_title="PragyanAI - Advanced Testbench Evaluator & Iterative AI Repair",
     page_icon="📊",
     layout="wide"
 )
 
-st.title("PragyanAI - Advanced Testbench Evaluator & AI Repair Studio")
+st.title("PragyanAI - Advanced Testbench Evaluator & Iterative AI Repair Studio")
 st.markdown(
     "Test all available code versions against comprehensive AI-generated test vectors, "
-    "compare simulation outcomes side-by-side, **dispatch AI repair agents** to automatically fix, replace, and re-run failing versions with explanations, "
-    "and export professional PDF engineering reports."
+    "compare simulation outcomes side-by-side, and use **iterative AI repair agents** to modify code, "
+    "inspect changes, re-run simulations until success, and export professional engineering PDF reports."
 )
 
 # -----------------------------------------------------------------------------
@@ -152,7 +152,8 @@ if st.button("🚀 Run Batch Test Across All Versions", type="primary"):
                 "code": ver_code,
                 "status": status,
                 "output": sim_output,
-                "repair_explanation": ""
+                "repair_explanation": "",
+                "fix_attempts": 0
             }
         progress_bar.progress((idx + 1) / total_versions)
 
@@ -160,11 +161,11 @@ if st.button("🚀 Run Batch Test Across All Versions", type="primary"):
     st.success("✨ Batch evaluation completed across all versions successfully!")
 
 # -----------------------------------------------------------------------------
-# Display Results & AI Repair Agent Triggers
+# Display Results & Iterative AI Repair Console
 # -----------------------------------------------------------------------------
 if st.session_state["batch_evaluation_results"]:
     st.markdown("---")
-    st.subheader("📊 Comparative Batch Evaluation Summary & AI Repair Studio")
+    st.subheader("📊 Comparative Batch Evaluation Summary & Iterative AI Repair")
 
     results_data = st.session_state["batch_evaluation_results"]
     
@@ -178,41 +179,43 @@ if st.session_state["batch_evaluation_results"]:
                 st.error(f"❌ {data['status']}")
 
     st.markdown("---")
-    st.subheader("🔍 Detailed Version Breakdown & AI Repair Console")
+    st.subheader("🔍 Detailed Version Breakdown & Iterative AI Repair Console")
 
     for ver_name, data in results_data.items():
         with st.expander(f"📂 {ver_name} — Status: {data['status']}", expanded=True):
             col_v1, col_v2 = st.columns(2)
             with col_v1:
-                st.markdown("**Source Code:**")
+                st.markdown("**Current Source Code:**")
                 st.code(data["code"], language="verilog")
             with col_v2:
-                st.markdown("**Simulation Output Log:**")
+                st.markdown("**Simulation Execution Log:**")
                 st.text(data["output"])
 
-            # If the version failed, provide the AI Repair button
+            # If version failed, show iterative fix button
             if data["status"] != "PASSED":
                 st.markdown("---")
-                st.markdown("### 🤖 AI Agent Error Debugger, Fixer & Auto-Rerun")
-                st.markdown("Click below to dispatch an expert Verilog repair agent to analyze errors, rewrite code, **replace the version, and automatically re-run simulation**.")
+                st.markdown("### 🤖 Iterative AI Repair & Re-run Agent")
+                st.markdown("If simulation failed, click below to have the AI analyze the error, **modify the code**, explain the fix, and automatically re-run the simulation test suite.")
                 
                 repair_btn_key = f"fix_btn_{ver_name.replace(' ', '_')}"
-                if st.button(f"🛠️ Fix, Replace & Rerun [{ver_name}] via AI", key=repair_btn_key):
-                    with st.spinner(f"AI Agent rewriting code, replacing session state, and re-running simulation for [{ver_name}]..."):
+                if st.button(f"🛠️ Modify Code & Re-run [{ver_name}] (Attempt {data['get', 'fix_attempts', 0] + 1})", key=repair_btn_key):
+                    with st.spinner(f"AI Agent rewriting code, running compilation, and testing [{ver_name}]..."):
                         time.sleep(3)
+                        attempts = data.get("fix_attempts", 0) + 1
+                        
                         repair_prompt = (
                             f"You are an expert Verilog Debugging and Synthesis Agent. "
-                            f"The following Verilog module failed simulation/compilation against the testbench.\n\n"
+                            f"This Verilog module failed simulation against the testbench (Attempt {attempts}).\n\n"
                             f"Faulty Verilog RTL Code:\n{data['code']}\n\n"
                             f"Testbench Used:\n{st.session_state['batch_testbench']}\n\n"
                             f"Simulation / Error Log:\n{data['output']}\n\n"
                             "Provide:\n"
                             "1. **Fixed Verilog Code** inside ```verilog ... ``` code blocks.\n"
-                            "2. **Detailed Repair Explanation** explaining what caused the bug and how your fixes resolved it."
+                            "2. **Detailed Explanation of Changes** explaining what was changed and why it fixes the failure."
                         )
                         try:
                             repair_res = llm.invoke([
-                                SystemMessage(content="You are an expert Verilog repair agent. Return the fixed Verilog code inside markdown code blocks followed by a clear explanation."),
+                                SystemMessage(content="You are an expert Verilog repair agent. Return the fixed Verilog code inside markdown code blocks followed by a clear explanation of changes."),
                                 HumanMessage(content=repair_prompt)
                             ])
                             
@@ -226,14 +229,15 @@ if st.session_state["batch_evaluation_results"]:
                                 
                             explanation = re.sub(r"```verilog.*?```", "", rep_content, flags=re.DOTALL).strip()
                             
-                            # Automatically Re-run simulation with fixed code
+                            # Immediately re-run simulation with modified code
                             new_status, new_output = run_simulation(fixed_rtl, st.session_state["batch_testbench"])
                             
-                            # Update batch evaluation results in session state
+                            # Update batch evaluation state
                             st.session_state["batch_evaluation_results"][ver_name]["code"] = fixed_rtl
                             st.session_state["batch_evaluation_results"][ver_name]["status"] = new_status
                             st.session_state["batch_evaluation_results"][ver_name]["output"] = new_output
                             st.session_state["batch_evaluation_results"][ver_name]["repair_explanation"] = explanation
+                            st.session_state["batch_evaluation_results"][ver_name]["fix_attempts"] = attempts
                             
                             # Replace version globally in session state
                             if ver_name == "Final Verified Production Version":
@@ -247,14 +251,17 @@ if st.session_state["batch_evaluation_results"]:
                             elif ver_name == "Robust & Clean Variant":
                                 st.session_state["variant_robust"] = fixed_rtl
                                 
-                            st.success(f"🎉 Successfully repaired, replaced, and re-run [{ver_name}]! New Status: {new_status}")
+                            if new_status == "PASSED":
+                                st.success(f"🎉 Successfully fixed and passed simulation on attempt {attempts}!")
+                            else:
+                                st.warning(f"⚠️ Attempt {attempts} completed with status: {new_status}. Review explanation and click again if needed.")
                             st.rerun()
                             
                         except Exception as rep_err:
-                            st.error(f"Failed to execute AI repair and rerun: {rep_err}")
+                            st.error(f"Failed to execute iterative AI repair: {rep_err}")
 
             if data.get("repair_explanation"):
-                st.markdown("#### 📝 AI Repair Explanation & Bug Analysis")
+                st.markdown("#### 📝 AI Code Modification & Explanation Report")
                 st.markdown(data["repair_explanation"])
 
     with st.expander("🧪 View Unified Comprehensive Testbench Used", expanded=False):
@@ -293,25 +300,25 @@ if st.session_state["batch_evaluation_results"]:
         )
 
         story.append(Paragraph("PragyanAI - Comprehensive Batch Verification & AI Repair Report", title_style))
-        story.append(Paragraph("<b>Studio Module:</b> Advanced Testbench Evaluator & AI Auto-Repair Agent", styles['Normal']))
+        story.append(Paragraph("<b>Studio Module:</b> Advanced Testbench Evaluator & Iterative AI Repair", styles['Normal']))
         story.append(Spacer(1, 10))
 
         story.append(Paragraph("1. Unified Testbench Stimulus (`test_bench.v`)", heading_style))
         story.append(Preformatted(testbench_code, code_style))
         story.append(Spacer(1, 10))
 
-        story.append(Paragraph("2. Evaluated Versions, Simulation Results & AI Fixes", heading_style))
+        story.append(Paragraph("2. Evaluated Versions, Simulation Results & AI Modifications", heading_style))
         for ver_name, data in results.items():
             story.append(Paragraph(f"<b>Version:</b> {ver_name} | <b>Status:</b> {data['status']}", styles['Normal']))
             story.append(Spacer(1, 4))
-            story.append(Paragraph("<b>RTL Code:</b>", styles['Normal']))
+            story.append(Paragraph("<b>Final RTL Code:</b>", styles['Normal']))
             story.append(Preformatted(data["code"], code_style))
             story.append(Spacer(1, 4))
             story.append(Paragraph("<b>Simulation Output:</b>", styles['Normal']))
             story.append(Preformatted(data["output"], code_style))
             if data.get("repair_explanation"):
                 story.append(Spacer(1, 4))
-                story.append(Paragraph(f"<b>AI Repair Notes:</b> {data['repair_explanation'][:300]}...", styles['Normal']))
+                story.append(Paragraph(f"<b>AI Modification Notes:</b> {data['repair_explanation'][:300]}...", styles['Normal']))
             story.append(Spacer(1, 10))
 
         doc.build(story)
@@ -327,4 +334,5 @@ if st.session_state["batch_evaluation_results"]:
                 file_name="PragyanAI_Batch_Verification_Report.pdf",
                 mime="application/pdf"
             )
+            
             
