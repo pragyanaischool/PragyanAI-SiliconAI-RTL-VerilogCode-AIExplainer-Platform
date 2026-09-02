@@ -9,7 +9,10 @@ st.set_page_config(
     page_icon="⚡",
     layout="wide"
 )
-
+try:
+    st.image("PragyanAI_Transperent.png", width=300)
+except Exception:
+    pass
 st.title("PragyanAI - Multi-Agent Variant Generation & Explanation Studio")
 st.markdown(
     "Instead of a single linear pipeline, this module dispatches **three specialized design agents** in parallel: "
