@@ -1,8 +1,8 @@
 import streamlit as st
 import subprocess
 import os
-import re
 import time
+import re
 from langchain_groq import ChatGroq
 from langchain_core.messages import SystemMessage, HumanMessage
 from reportlab.lib.pagesizes import letter
@@ -20,7 +20,7 @@ st.set_page_config(
 st.title("PragyanAI - Advanced Testbench Evaluator & AI Repair Studio")
 st.markdown(
     "Test all available code versions against comprehensive AI-generated test vectors, "
-    "compare simulation outcomes side-by-side, **dispatch AI repair agents** to fix any failing versions with detailed explanations, "
+    "compare simulation outcomes side-by-side, **dispatch AI repair agents** to automatically fix, replace, and re-run failing versions with explanations, "
     "and export professional PDF engineering reports."
 )
 
@@ -193,12 +193,12 @@ if st.session_state["batch_evaluation_results"]:
             # If the version failed, provide the AI Repair button
             if data["status"] != "PASSED":
                 st.markdown("---")
-                st.markdown("### 🤖 AI Agent Error Debugger & Fixer")
-                st.markdown("Click below to dispatch an expert Verilog repair agent to analyze the error log, testbench, and code, and fix the failure.")
+                st.markdown("### 🤖 AI Agent Error Debugger, Fixer & Auto-Rerun")
+                st.markdown("Click below to dispatch an expert Verilog repair agent to analyze errors, rewrite code, **replace the version, and automatically re-run simulation**.")
                 
                 repair_btn_key = f"fix_btn_{ver_name.replace(' ', '_')}"
-                if st.button(f"🛠️ Fix [{ver_name}] via AI Agent", key=repair_btn_key):
-                    with st.spinner(f"AI Agent analyzing error logs and repairing [{ver_name}]..."):
+                if st.button(f"🛠️ Fix, Replace & Rerun [{ver_name}] via AI", key=repair_btn_key):
+                    with st.spinner(f"AI Agent rewriting code, replacing session state, and re-running simulation for [{ver_name}]..."):
                         time.sleep(3)
                         repair_prompt = (
                             f"You are an expert Verilog Debugging and Synthesis Agent. "
@@ -208,13 +208,13 @@ if st.session_state["batch_evaluation_results"]:
                             f"Simulation / Error Log:\n{data['output']}\n\n"
                             "Provide:\n"
                             "1. **Fixed Verilog Code** inside ```verilog ... ``` code blocks.\n"
-                            "2. **Detailed Repair Explanation** explaining exactly what caused the bug and how your fixes resolved it."
+                            "2. **Detailed Repair Explanation** explaining what caused the bug and how your fixes resolved it."
                         )
                         try:
                             repair_res = llm.invoke([
                                 SystemMessage(content="You are an expert Verilog repair agent. Return the fixed Verilog code inside markdown code blocks followed by a clear explanation."),
                                 HumanMessage(content=repair_prompt)
-                            ] )
+                            ])
                             
                             rep_content = repair_res.content
                             if "```verilog" in rep_content:
@@ -226,26 +226,32 @@ if st.session_state["batch_evaluation_results"]:
                                 
                             explanation = re.sub(r"```verilog.*?```", "", rep_content, flags=re.DOTALL).strip()
                             
-                            # Re-run simulation with fixed code
+                            # Automatically Re-run simulation with fixed code
                             new_status, new_output = run_simulation(fixed_rtl, st.session_state["batch_testbench"])
                             
-                            # Update session state results
+                            # Update batch evaluation results in session state
                             st.session_state["batch_evaluation_results"][ver_name]["code"] = fixed_rtl
                             st.session_state["batch_evaluation_results"][ver_name]["status"] = new_status
                             st.session_state["batch_evaluation_results"][ver_name]["output"] = new_output
                             st.session_state["batch_evaluation_results"][ver_name]["repair_explanation"] = explanation
                             
-                            # Also update general session state keys if applicable
+                            # Replace version globally in session state
                             if ver_name == "Final Verified Production Version":
                                 st.session_state["rtl_final"] = fixed_rtl
                             elif ver_name == "Initial Generator Draft (v1)":
                                 st.session_state["rtl_v1"] = fixed_rtl
+                            elif ver_name == "Performance Optimized Variant":
+                                st.session_state["variant_perf"] = fixed_rtl
+                            elif ver_name == "Area Optimized Variant":
+                                st.session_state["variant_area"] = fixed_rtl
+                            elif ver_name == "Robust & Clean Variant":
+                                st.session_state["variant_robust"] = fixed_rtl
                                 
-                            st.success(f"✨ Successfully repaired [{ver_name}]! New Status: {new_status}")
+                            st.success(f"🎉 Successfully repaired, replaced, and re-run [{ver_name}]! New Status: {new_status}")
                             st.rerun()
                             
                         except Exception as rep_err:
-                            st.error(f"Failed to execute AI repair agent: {rep_err}")
+                            st.error(f"Failed to execute AI repair and rerun: {rep_err}")
 
             if data.get("repair_explanation"):
                 st.markdown("#### 📝 AI Repair Explanation & Bug Analysis")
@@ -287,7 +293,7 @@ if st.session_state["batch_evaluation_results"]:
         )
 
         story.append(Paragraph("PragyanAI - Comprehensive Batch Verification & AI Repair Report", title_style))
-        story.append(Paragraph("<b>Studio Module:</b> Advanced Testbench Evaluator & AI Debugging Agent", styles['Normal']))
+        story.append(Paragraph("<b>Studio Module:</b> Advanced Testbench Evaluator & AI Auto-Repair Agent", styles['Normal']))
         story.append(Spacer(1, 10))
 
         story.append(Paragraph("1. Unified Testbench Stimulus (`test_bench.v`)", heading_style))
@@ -321,3 +327,4 @@ if st.session_state["batch_evaluation_results"]:
                 file_name="PragyanAI_Batch_Verification_Report.pdf",
                 mime="application/pdf"
             )
+            
