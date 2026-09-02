@@ -8,7 +8,10 @@ st.set_page_config(
     page_icon="✏️",
     layout="wide"
 )
-
+try:
+    st.image("PragyanAI_Transperent.png", width=300)
+except Exception:
+    pass
 st.title("PragyanAI - Interactive Code Editor, Compilation & Save Studio")
 st.markdown(
     "Modify any part of the generated Verilog design or testbench code directly, "
