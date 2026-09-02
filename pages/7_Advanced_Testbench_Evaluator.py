@@ -15,7 +15,10 @@ st.set_page_config(
     page_icon="📊",
     layout="wide"
 )
-
+try:
+    st.image("PragyanAI_Transperent.png", width=300)
+except Exception:
+    pass
 st.title("PragyanAI - Batch Testbench Evaluator & Comparative PDF Report Studio")
 st.markdown(
     "Automatically test **all available code versions** in your session against comprehensive AI-generated test vectors, "
