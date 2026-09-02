@@ -8,7 +8,10 @@ st.set_page_config(
     page_icon="🔀",
     layout="wide"
 )
-
+try:
+    st.image("PragyanAI_Transperent.png", width=300)
+except Exception:
+    pass
 st.title("PragyanAI - Multi-Agent Version Selector & Delta Analysis")
 st.markdown(
     "Compare the evolution of your Verilog code across different stages of the pipeline or variants. "
