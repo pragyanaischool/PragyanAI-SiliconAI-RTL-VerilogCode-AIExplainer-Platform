@@ -27,7 +27,7 @@ st.markdown(
 st.markdown("---")
 
 # -----------------------------------------------------------------------------
-# Modular Architecture Breakdown Cards (Ordered 1 to 6)
+# Modular Architecture Breakdown Cards (Ordered 1 to 7)
 # -----------------------------------------------------------------------------
 st.subheader("📌 Available Studio Modules & Navigation")
 st.markdown("Use the **left sidebar** to switch seamlessly between the following modular workspaces:")
@@ -71,6 +71,12 @@ with col2:
     st.markdown(
         "An intelligent conversational chatbot tied directly to your active design context. "
         "Ask questions, request line-by-line code walk-throughs, or query specific architectural states."
+    )
+    
+    st.markdown("### 📊 7. Advanced Testbench Evaluator")
+    st.markdown(
+        "Dispatches batch evaluations across all generated code versions using comprehensive testbench vectors, "
+        "compares simulation outcomes side-by-side, and exports formatted engineering PDF reports."
     )
 
 st.markdown("---")
