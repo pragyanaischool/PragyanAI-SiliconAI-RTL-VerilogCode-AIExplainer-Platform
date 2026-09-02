@@ -1,5 +1,6 @@
 import subprocess
 import re
+import time
 from typing import TypedDict
 from langchain_groq import ChatGroq
 from langchain_core.messages import SystemMessage, HumanMessage
@@ -67,10 +68,13 @@ def compile_and_run_rtl(rtl_code: str, test_code: str) -> dict:
         return {"run_output": err_msg, "error_log": err_msg, "status": "FAILED"}
 
 def build_rtl_graph(api_key: str):
-    """Constructs and compiles the LangGraph multi-agent workflow graph with robust error feedback loops."""
+    """Constructs and compiles the LangGraph multi-agent workflow graph with robust error feedback loops and rate-limit mitigation delays."""
     llm = ChatGroq(model="openai/gpt-oss-120b", temperature=0.1, api_key=api_key)
 
     def agent_generator(state: RTLState) -> dict:
+        # Safety delay to respect Groq tokens-per-minute (TPM) rate limits
+        time.sleep(5)
+        
         if not state["error_log"]:
             prompt_text = f"Write initial clean, synthesizable Verilog code for: {state['prompt']}"
         else:
@@ -89,6 +93,9 @@ def build_rtl_graph(api_key: str):
         return {"rtl_code": rtl}
 
     def agent_critic(state: RTLState) -> dict:
+        # Safety delay to prevent rapid consecutive API request bursts
+        time.sleep(5)
+        
         res = llm.invoke([
             SystemMessage(content="You are a strict hardware design critic. Review the provided Verilog code for synthesis flaws, latch inferences, missing reset controls, or timing violations. Provide concise bullet points of feedback."),
             HumanMessage(content=state["rtl_code"])
@@ -99,6 +106,9 @@ def build_rtl_graph(api_key: str):
         # Generate testbench on first pass, or re-generate if persistent errors occur across cycles
         if state["test_code"] and state["iteration"] > 0 and not state["error_log"]:
             return {}
+            
+        # Safety delay to prevent rate limit exceptions
+        time.sleep(5)
             
         res = llm.invoke([
             SystemMessage(content="You are a hardware verification engineer. Write a self-checking Verilog testbench module using $display and $finish. Output ONLY raw verilog testbench code inside standard markdown ```verilog ... ``` code blocks."),
