@@ -191,11 +191,11 @@ if st.session_state["batch_evaluation_results"]:
                 st.markdown("**Simulation Execution Log:**")
                 st.text(data["output"])
 
-            # If version failed, show iterative fix button
+            # Render Iterative AI Repair agent block specifically for any failed version
             if data["status"] != "PASSED":
                 st.markdown("---")
                 st.markdown("### 🤖 Iterative AI Repair & Re-run Agent")
-                st.markdown("If simulation failed, click below to have the AI analyze the error, **modify the code**, explain the fix, and automatically re-run the simulation test suite.")
+                st.markdown("If simulation failed, click below to have the AI analyze the error, modify the code, explain the fix, and automatically re-run the simulation test suite.")
                 
                 current_attempts = data.get("fix_attempts", 0)
                 repair_btn_key = f"fix_btn_{ver_name.replace(' ', '_')}_{current_attempts}"
