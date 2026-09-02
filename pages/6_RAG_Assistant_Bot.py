@@ -4,7 +4,7 @@ from langchain_core.messages import SystemMessage, HumanMessage
 
 # Page Configuration
 st.set_page_config(
-    page_title="RAG Code Assistant Bot",
+    page_title="PragyanAI - RAG Code Assistant Bot",
     page_icon="💬",
     layout="wide"
 )
@@ -12,7 +12,7 @@ st.set_page_config(
 st.title("PragyanAI - RAG AI Code Intelligence Bot")
 st.markdown(
     "Ask detailed questions, request line-by-line code walkthroughs, or query specific architectural behaviors "
-    "of your active Verilog design."
+    "of your active Verilog design and testbench context."
 )
 
 # -----------------------------------------------------------------------------
@@ -40,15 +40,21 @@ if not api_key:
 llm = ChatGroq(model="openai/gpt-oss-120b", temperature=0.1, api_key=api_key)
 
 # -----------------------------------------------------------------------------
-# Retrieve Current Code Context
+# Retrieve Current Code Context (RTL + Testbench)
 # -----------------------------------------------------------------------------
-current_code_context = st.session_state.get(
+rtl_context = st.session_state.get(
     "rtl_final", 
-    "// No active Verilog design found. Please run the Multi-Agent Pipeline first or paste your code."
+    "// No active Verilog design found. Please run the Multi-Agent Pipeline first."
+)
+tb_context = st.session_state.get(
+    "testbench_code", 
+    "// No active testbench found."
 )
 
+combined_code_context = f"--- VERILOG RTL DESIGN (design.v) ---\n{rtl_context}\n\n--- VERILOG TESTBENCH (test_bench.v) ---\n{tb_context}"
+
 with st.expander("🔍 View Active Verilog Code Context (RAG Knowledge Base)"):
-    st.code(current_code_context, language="verilog")
+    st.code(combined_code_context, language="verilog")
 
 # -----------------------------------------------------------------------------
 # Chat History Management
@@ -57,7 +63,7 @@ if "chat_messages" not in st.session_state:
     st.session_state["chat_messages"] = [
         {
             "role": "assistant", 
-            "content": "Hello! I am your RAG Verilog Assistant. Ask me anything about your current code architecture, logic blocks, or how to optimize it."
+            "content": "Hello! I am your PragyanAI RAG Verilog Assistant. Ask me anything about your current code architecture, logic blocks, testbench scenarios, or how to optimize it."
         }
     ]
 
@@ -79,16 +85,11 @@ if user_query:
         rag_system_prompt = (
             "You are an expert Verilog RAG Assistant and Hardware Architect. Use the provided Verilog code context "
             "as your ground truth source to answer user questions accurately. Explain syntax, state machines, timing, "
-            "and logic flows thoroughly.\n\n"
-            f"Verilog Code Context:\n{current_code_context}"
+            "test coverage, and logic flows thoroughly.\n\n"
+            f"Verilog Code Context:\n{combined_code_context}"
         )
         
-        # Build message payload for LLM invocation
-        messages = [SystemMessage(content=rag_system_prompt)] + [
-            HumanMessage(content=m["content"]) if m["role"] == "user" else SystemMessage(content=m["content"])
-            for m in st.session_state["chat_messages"] if m["role"] != "assistant" or m == st.session_state["chat_messages"][-1]
-        ]
-        
+        # Build message payload for LLM invocation keeping context secure
         try:
             response = llm.invoke([SystemMessage(content=rag_system_prompt)] + [HumanMessage(content=user_query)])
             bot_reply = response.content
