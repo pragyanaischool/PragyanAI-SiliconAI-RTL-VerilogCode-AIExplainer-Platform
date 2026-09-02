@@ -8,7 +8,10 @@ st.set_page_config(
     page_icon="💬",
     layout="wide"
 )
-
+try:
+    st.image("PragyanAI_Transperent.png", width=300)
+except Exception:
+    pass
 st.title("PragyanAI - RAG AI Code Intelligence Bot")
 st.markdown(
     "Ask detailed questions, request line-by-line code walkthroughs, or query specific architectural behaviors "
